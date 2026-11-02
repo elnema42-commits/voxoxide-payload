@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voxoxide.exe</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; overflow: hidden;
+            background: #000; color: #fff;
+            font-family: 'Courier New', monospace;
+            user-select: none;
+        }
+        canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 1;
+        }
+        #ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; text-align: center;
+            background: rgba(10, 10, 10, 0.9); padding: 30px;
+            border: 3px solid #ff0055; box-shadow: 0 0 30px #ff0055;
+        }
+        h2 { color: #ff0055; margin: 0 0 10px 0; letter-spacing: 2px; }
+        button {
+            background: #ff0055; color: #fff; font-weight: bold;
+            border: none; padding: 12px 24px; cursor: pointer;
+            font-family: inherit; margin-top: 20px;
+            box-shadow: 0 0 10px #ff0055;
+        }
+        button:hover { background: #ff3377; }
+    </style>
+</head>
+<body>
+
+    <canvas id="virusCanvas"></canvas>
+
+    <div id="ui">
+        <h2>⚠️ CRITICAL INFECTION ⚠️</h2>
+        <p>Process: <b>Voxoxide.exe</b> has corrupted system graphics.</p>
+        <button id="payloadBtn">RUN VOXOXIDE.EXE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('virusCanvas');
+        const ctx = canvas.getContext('2d');
+        let t = 0;
+        let audioCtx = null;
+        let scriptNode = null;
+        let isActive = false;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function bytebeat(t) {
+            return (t >> 2 * t >> 1);
+        }
+
+        function draw() {
+            if (!isActive) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < canvas.height; y += 4) {
+                let soundSnapshot = bytebeat(t + y) & 255;
+                let waveFrequency = 0.03;
+                let waveAmplitude = 35; 
+                let horizontalOffset = Math.sin(y * waveFrequency + t * 0.05) * waveAmplitude;
+
+                if (soundSnapshot > 100) {
+                    horizontalOffset += (Math.random() * 20 - 10);
+                }
+
+                let lineX = (y * 3 + t) % canvas.width;
+
+                ctx.fillStyle = 'rgba(255, 0, 85, 0.8)';
+                ctx.fillRect(lineX + horizontalOffset - 4, y, soundSnapshot * 1.5, 3);
+
+                ctx.fillStyle = 'rgba(0, 255, 150, 0.8)';
+                ctx.fillRect(lineX + horizontalOffset, y, soundSnapshot * 1.5, 3);
+
+                ctx.fillStyle = 'rgba(0, 150, 255, 0.8)';
+                ctx.fillRect(lineX + horizontalOffset + 4, y, soundSnapshot * 1.5, 3);
+            }
+
+            if (!audioCtx) t++;
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        document.getElementById('payloadBtn').addEventListener('click', () => {
+            if (audioCtx) return;
+            isActive = true;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
+            
+            scriptNode = audioCtx.createScriptProcessor(4096, 0, 1);
+            scriptNode.onaudioprocess = function(audioProcessingEvent) {
+                let outputBuffer = audioProcessingEvent.outputBuffer;
+                let channelData = outputBuffer.getChannelData(0);
+
+                for (let sample = 0; sample < outputBuffer.length; sample++) {
+                    t++;
+                    let sampleVal = bytebeat(t) & 255;
+                    channelData[sample] = (sampleVal / 127.5) - 1.0;
+                }
+            };
+
+            scriptNode.connect(audioCtx.destination);
+            document.getElementById('ui').style.display = 'none';
+        });
+    </script>
+</body>
+                                                                        </html>
+  
